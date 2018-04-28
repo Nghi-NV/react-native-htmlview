@@ -72,6 +72,10 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
       if (node.type === 'text') {
         const defaultStyle = opts.textComponentProps ? opts.textComponentProps.style : null;
         const customStyle = inheritedStyle(parent);
+        
+        if (node.data != undefined && node.data != null && node.data.trim().length == 0) {
+          return
+        }
 
         return (
           <TextComponent

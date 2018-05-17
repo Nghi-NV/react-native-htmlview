@@ -4,7 +4,6 @@ import htmlparser from 'htmlparser2-without-node-native';
 import entities from 'entities';
 
 import AutoSizedImage from './AutoSizedImage';
-import { FLAGGED_SERVICE } from '../../js/actions/types';
 
 const defaultOpts = {
   lineBreak: '\n',

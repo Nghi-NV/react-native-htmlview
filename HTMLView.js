@@ -36,6 +36,7 @@ const htmlToElementOptKeys = [
   'textComponentProps',
   'NodeComponent',
   'nodeComponentProps',
+  'nameTagCustom'
 ];
 
 class HtmlView extends PureComponent {

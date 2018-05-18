@@ -13,6 +13,7 @@ const defaultOpts = {
   textComponentProps: null,
   NodeComponent: Text,
   nodeComponentProps: null,
+  nameTagCustom: []
 };
 
 const Img = props => {
@@ -51,6 +52,9 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
 
   function domToElement(dom, parent) {
     if (!dom) return null;
+
+
+    let { nameTagCustom } = opts
 
     const renderNode = opts.customRenderer;
     let orderedListCounter = 1;
@@ -148,7 +152,7 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
         }
 
         const { NodeComponent, styles } = opts;
-        let hasIframe = domHasIframe(node)
+        let hasIframe = domHasIframe(node, nameTagCustom)
         if (hasIframe) {
           return <View
             {...opts.nodeComponentProps}
@@ -157,7 +161,10 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
             style={!node.parent ? styles[node.name] : null}
             onLongPress={linkLongPressHandler}
           >
+            {/* {linebreakBefore}
+            {listItemPrefix} */}
             {domToElement(node.children, node)}
+            {/* {linebreakAfter} */}
           </View>
         }
         return (
@@ -178,10 +185,10 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
     });
   }
 
-  function domHasIframe(node) {
+  function domHasIframe(node, nameTagCustom=[]) {
     if (!node)
       return false
-    if (node.name == 'iframe')
+    if (nameTagCustom.findIndex(t => t == node.name) >= 0)
       return true
     if (!node.children || node.children.length == 0) {
       return false
@@ -191,7 +198,7 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
     for (let i = 0; i < node.children.length; i++) {
       if (has)
         return true
-      has = domHasIframe(node.children[i])
+      has = domHasIframe(node.children[i], nameTagCustom)
     }
     return has
 

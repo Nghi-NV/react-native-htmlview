@@ -1,5 +1,5 @@
 import React from 'react';
-import {StyleSheet, Text} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import htmlparser from 'htmlparser2-without-node-native';
 import entities from 'entities';
 
@@ -13,6 +13,7 @@ const defaultOpts = {
   textComponentProps: null,
   NodeComponent: Text,
   nodeComponentProps: null,
+  nameTagCustom: []
 };
 
 const Img = props => {
@@ -46,11 +47,14 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
     if (!parent) return null;
     const style = StyleSheet.flatten(opts.styles[parent.name]) || {};
     const parentStyle = inheritedStyle(parent.parent) || {};
-    return {...parentStyle, ...style};
+    return { ...parentStyle, ...style };
   }
 
   function domToElement(dom, parent) {
     if (!dom) return null;
+
+
+    let { nameTagCustom } = opts
 
     const renderNode = opts.customRenderer;
     let orderedListCounter = 1;
@@ -67,12 +71,12 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
         if (rendered || rendered === null) return rendered;
       }
 
-      const {TextComponent} = opts;
+      const { TextComponent } = opts;
 
       if (node.type === 'text') {
         const defaultStyle = opts.textComponentProps ? opts.textComponentProps.style : null;
         const customStyle = inheritedStyle(parent);
-        
+
         if (node.data != undefined && node.data != null && node.data.trim().length == 0) {
           return
         }
@@ -93,6 +97,7 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
           return <Img key={index} attribs={node.attribs} />;
         }
 
+
         let linkPressHandler = null;
         let linkLongPressHandler = null;
         if (node.name === 'a' && node.attribs && node.attribs.href) {
@@ -108,22 +113,22 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
         let linebreakAfter = null;
         if (opts.addLineBreaks) {
           switch (node.name) {
-          case 'pre':
-            linebreakBefore = opts.lineBreak;
-            break;
-          case 'p':
-            if (index < list.length - 1) {
-              linebreakAfter = opts.paragraphBreak;
-            }
-            break;
-          case 'br':
-          case 'h1':
-          case 'h2':
-          case 'h3':
-          case 'h4':
-          case 'h5':
-            linebreakAfter = opts.lineBreak;
-            break;
+            case 'pre':
+              linebreakBefore = opts.lineBreak;
+              break;
+            case 'p':
+              if (index < list.length - 1) {
+                linebreakAfter = opts.paragraphBreak;
+              }
+              break;
+            case 'br':
+            case 'h1':
+            case 'h2':
+            case 'h3':
+            case 'h4':
+            case 'h5':
+              linebreakAfter = opts.lineBreak;
+              break;
           }
         }
 
@@ -146,8 +151,22 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
           }
         }
 
-        const {NodeComponent, styles} = opts;
-
+        const { NodeComponent, styles } = opts;
+        let hasIframe = domHasIframe(node, nameTagCustom)
+        if (hasIframe) {
+          return <View
+            {...opts.nodeComponentProps}
+            key={index}
+            onPress={linkPressHandler}
+            style={!node.parent ? styles[node.name] : null}
+            onLongPress={linkLongPressHandler}
+          >
+            {/* {linebreakBefore}
+            {listItemPrefix} */}
+            {domToElement(node.children, node)}
+            {/* {linebreakAfter} */}
+          </View>
+        }
         return (
           <NodeComponent
             {...opts.nodeComponentProps}
@@ -166,7 +185,28 @@ export default function htmlToElement(rawHtml, customOpts = {}, done) {
     });
   }
 
-  const handler = new htmlparser.DomHandler(function(err, dom) {
+  function domHasIframe(node, nameTagCustom=[]) {
+    if (!node)
+      return false
+    if (nameTagCustom.findIndex(t => t == node.name) >= 0)
+      return true
+    if (!node.children || node.children.length == 0) {
+      return false
+    }
+
+    let has = false
+    for (let i = 0; i < node.children.length; i++) {
+      if (has)
+        return true
+      has = domHasIframe(node.children[i], nameTagCustom)
+    }
+    return has
+
+  }
+
+
+
+  const handler = new htmlparser.DomHandler(function (err, dom) {
     if (err) done(err);
     done(null, domToElement(dom));
   });
